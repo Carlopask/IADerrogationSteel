@@ -3,7 +3,6 @@ import pandas as pd
 from PIL import Image
 import os
 from google import genai
-from google.genai import types
 
 # Configuración de la página web
 st.set_page_config(page_title="Análisis de Desviaciones de Lámina", layout="wide")
@@ -23,36 +22,42 @@ if uploaded_file is not None:
         with st.status("Analizando la imagen y extrayendo datos...", expanded=True) as status:
             st.write("Conectando con el motor de IA...")
             
-            # Inicializar el cliente de Gemini (asegúrate de tener tu API_KEY configurada en las variables de entorno de tu IDX)
-            client = genai.Client()
-            
-            # Prompt para estructurar los datos
-            prompt = """
-            Analiza la siguiente imagen de una lámina y extrae la información para las siguientes secciones:
-            
-            1. Descripción del rollo: Llenar Baseline y Alternative.
-            2. Normas equivalentes: Llenar Baseline y Alternative.
-            3. Composición Química: Tabla con columnas C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb (dejar vacío si no hay valor).
-            4. Espesor: Baseline y Alternative.
-            5. Largo de rollo: Baseline y Alternative.
-            6. Yield Strength: Baseline y Alternative.
-            7. Tensile strength: Baseline y Alternative.
-            8. % Elongation: Baseline y Alternative.
-            
-            Formatea la respuesta en un JSON claro o texto estructurado.
-            """
-            
-            # Llamada a Gemini
-            response = client.models.generate_content(
-                model='gemini-2.5-flash',
-                contents=[image, prompt]
-            )
-            
-            status.update(label="Análisis completado", state="complete")
+            try:
+                # Inicializamos el cliente de forma segura utilizando Streamlit Secrets
+                api_key = st.secrets["GEMINI_API_KEY"]
+                client = genai.Client(api_key=api_key)
+                
+                # Prompt para estructurar los datos
+                prompt = """
+                Analiza la siguiente imagen de una lámina y extrae la información para las siguientes secciones:
+                
+                1. Descripción del rollo: Llenar Baseline y Alternative.
+                2. Normas equivalentes: Llenar Baseline y Alternative.
+                3. Composición Química: Tabla con columnas C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb (dejar vacío si no hay valor).
+                4. Espesor: Baseline y Alternative.
+                5. Largo de rollo: Baseline y Alternative.
+                6. Yield Strength: Baseline y Alternative.
+                7. Tensile strength: Baseline y Alternative.
+                8. % Elongation: Baseline y Alternative.
+                
+                Formatea la respuesta en un JSON claro o texto estructurado.
+                """
+                
+                # Llamada a Gemini
+                response = client.models.generate_content(
+                    model='gemini-2.5-flash',
+                    contents=[image, prompt]
+                )
+                
+                status.update(label="Análisis completado", state="complete")
+                
+            except Exception as e:
+                st.error("Ocurrió un error al conectar con Gemini. Verifica que la variable GEMINI_API_KEY esté configurada en los secretos de Streamlit.")
+                st.stop()
             
         st.subheader("1. Descripción y Parámetros del Rollo")
         
-        # Ejemplo de tabla para los campos Alternative vs Baseline
+        # Tabla de parámetros
         data_params = {
             "Parámetro": ["Descripción del rollo", "Normas equivalentes", "Espesor", "Largo de rollo", "Yield Strength", "Tensile strength", "% Elongation"],
             "Alternative": ["-", "-", "-", "-", "-", "-", "-"],
@@ -72,20 +77,13 @@ if uploaded_file is not None:
         st.dataframe(df_chem)
         
         st.subheader("3. Conclusión y Dictamen")
-        # Lógica de negocio (Reglas de validación)
         st.info("💡 Análisis de criterios de aprobación:")
         
+        # Lógica de validación
         criterios_aprobacion = True
-        motivos = []
-        
-        # Aquí puedes ajustar las variables de ejemplo extraídas para validar:
-        # Por ejemplo, si es fosforizada:
-        es_fosforizada = False # Este valor dependería de la lectura real de la norma
         
         if not criterios_aprobacion:
             st.error("❌ Estatus: NO APROBAR")
-            for motivo in motivos:
-                st.markdown(f"- {motivo}")
         else:
             st.success("✔️ Estatus: APROBAR")
             st.write("La desviación cumple con todos los criterios evaluados.")
