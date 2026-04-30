@@ -114,7 +114,7 @@ if 'datos_analisis' in st.session_state:
     df_params['Idéntico (Check)'] = df_params['Baseline (Actual)'].str.strip() == df_params['Alternative (Propuesta)'].str.strip()
     
     # Mostramos la tabla formateada
-    st.dataframe(df_params, use_column_width=True, hide_index=True)
+    st.dataframe(df_params, use_container_width=True, hide_index=True)
     
     
     # --- TABLA 2: COMPOSICIÓN QUÍMICA ---
@@ -131,7 +131,7 @@ if 'datos_analisis' in st.session_state:
     df_chem = pd.DataFrame(data_chem)
     
     # Mostramos la tabla química
-    st.dataframe(df_chem, use_column_width=True, hide_index=True)
+    st.dataframe(df_chem, use_container_width=True, hide_index=True)
     
     
     # --- SECCIÓN 4: CONCLUSIÓN Y DICTAMEN (Lógica por definir) ---
