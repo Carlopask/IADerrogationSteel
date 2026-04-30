@@ -1,25 +1,37 @@
 import streamlit as st
 import pandas as pd
 from PIL import Image
-import os
+import json # Importante para manejar la respuesta de la IA
 from google import genai
 
 # Configuración de la página web
 st.set_page_config(page_title="Análisis de Desviaciones de Lámina", layout="wide")
 
 st.title("📊 Análisis de Desviaciones de Lámina")
-st.write("Sube la captura de pantalla para generar la tabla comparativa y la recomendación de aprobación.")
+st.write("Sube las capturas de pantalla de BASELINE y ALTERNATIVE para generar la comparativa y el dictamen.")
 
-# Carga de la imagen
-uploaded_file = st.file_uploader("Sube la captura de pantalla del archivo", type=["png", "jpg", "jpeg"])
+# --- SECCIÓN 1: CARGA DE ARCHIVOS (Modificada para 2 imágenes) ---
+st.subheader("1. Subir Capturas de Pantalla")
+col1, col2 = st.columns(2) # Creamos dos columnas para organizar los cargadores
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file)
-    st.image(image, caption="Imagen cargada", use_column_width=True)
-    
-    # Barra de progreso
-    if st.button("Procesar Análisis"):
-        with st.status("Analizando la imagen y extrayendo datos...", expanded=True) as status:
+with col1:
+    uploaded_baseline = st.file_uploader("Sube la captura de BASELINE (Actual)", type=["png", "jpg", "jpeg"], key="baseline")
+    if uploaded_baseline:
+        image_baseline = Image.open(uploaded_baseline)
+        st.image(image_baseline, caption="Imagen BASELINE cargada", use_column_width=True)
+
+with col2:
+    uploaded_alternative = st.file_uploader("Sube la captura de ALTERNATIVE (Propuesta)", type=["png", "jpg", "jpeg"], key="alternative")
+    if uploaded_alternative:
+        image_alternative = Image.open(uploaded_alternative)
+        st.image(image_alternative, caption="Imagen ALTERNATIVE cargada", use_column_width=True)
+
+
+# --- SECCIÓN 2: PROCESAMIENTO CON IA ---
+# Solo mostramos el botón si ambas imágenes han sido cargadas
+if uploaded_baseline and uploaded_alternative:
+    if st.button("Procesar Análisis Comparativo", type="primary"):
+        with st.status("Analizando imágenes y extrayendo datos con Gemini...", expanded=True) as status:
             st.write("Conectando con el motor de IA...")
             
             try:
@@ -27,63 +39,118 @@ if uploaded_file is not None:
                 api_key = st.secrets["GEMINI_API_KEY"]
                 client = genai.Client(api_key=api_key)
                 
-                # Prompt para estructurar los datos
+                # --- PROMPT AVANZADO PARA OBTENER JSON ESTRUCTURADO ---
+                # Le damos instrucciones muy precisas a Gemini sobre el formato de salida.
                 prompt = """
-                Analiza la siguiente imagen de una lámina y extrae la información para las siguientes secciones:
-                
-                1. Descripción del rollo: Llenar Baseline y Alternative.
-                2. Normas equivalentes: Llenar Baseline y Alternative.
-                3. Composición Química: Tabla con columnas C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb (dejar vacío si no hay valor).
-                4. Espesor: Baseline y Alternative.
-                5. Largo de rollo: Baseline y Alternative.
-                6. Yield Strength: Baseline y Alternative.
-                7. Tensile strength: Baseline y Alternative.
-                8. % Elongation: Baseline y Alternative.
-                
-                Formatea la respuesta en un JSON claro o texto estructurado.
+                Analiza las dos imágenes proporcionadas: la primera es 'BASELINE' (situación actual) y la segunda es 'ALTERNATIVE' (propuesta de desviación).
+                Extrae la información técnica de ambas y genera ÚNICAMENTE una respuesta en formato JSON puro, sin texto adicional, siguiendo esta estructura exacta:
+
+                {
+                  "parametros": [
+                    {"parametro": "Descripción del rollo", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "Normas equivalentes", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "Espesor", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "Largo de rollo", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "Yield Strength", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "Tensile strength", "baseline": "valor", "alternative": "valor"},
+                    {"parametro": "% Elongation", "baseline": "valor", "alternative": "valor"}
+                  ],
+                  "quimica": {
+                    "elementos": ["C", "Mn", "P", "S", "Si", "Al", "V", "Ti", "Cr", "Mo", "N", "B", "Cu", "Sn", "Ca", "Ni", "Cb"],
+                    "baseline": ["valor_C", "valor_Mn", ...],
+                    "alternative": ["valor_C", "valor_Mn", ...]
+                  }
+                }
+
+                Instrucciones adicionales:
+                1. Si un valor no está presente en la imagen, usa una cadena vacía "".
+                2. Asegúrate de que los valores numéricos se extraigan correctamente.
+                3. Para la composición química, mantén estrictamente el orden de los elementos indicados en la lista 'elementos'.
                 """
                 
-                # Llamada a Gemini
+                # Llamada a Gemini pasando AMBAS imágenes en la lista 'contents'
+                # Gemini asume que la primera es baseline y la segunda alternative por el orden en el prompt
                 response = client.models.generate_content(
                     model='gemini-2.5-flash',
-                    contents=[image, prompt]
+                    contents=[image_baseline, image_alternative, prompt]
                 )
                 
-                status.update(label="Análisis completado", state="complete")
+                # --- EXTRACCIÓN Y LIMPIEZA DE DATOS (NUEVO) ---
+                # A veces Gemini envuelve el JSON en bloques de código markdown ```json ... ```, hay que limpiarlo.
+                json_response_text = response.text.replace("```json", "").replace("```", "").strip()
                 
-            except Exception as e:
-                st.error("Ocurrió un error al conectar con Gemini. Verifica que la variable GEMINI_API_KEY esté configurada en los secretos de Streamlit.")
+                # Convertimos la cadena de texto JSON en un objeto diccionario de Python
+                datos_analisis = json.loads(json_response_text)
+                
+                # Guardamos los datos en la "sesión" de Streamlit para que no se borren al interactuar
+                st.session_state['datos_analisis'] = datos_analisis
+                
+                status.update(label="Análisis completado exitosamente", state="complete")
+                
+            except json.JSONDecodeError:
+                st.error("Error: La IA no devolvió un formato JSON válido. Intenta procesar de nuevo.")
                 st.stop()
-            
-        st.subheader("1. Descripción y Parámetros del Rollo")
-        
-        # Tabla de parámetros
-        data_params = {
-            "Parámetro": ["Descripción del rollo", "Normas equivalentes", "Espesor", "Largo de rollo", "Yield Strength", "Tensile strength", "% Elongation"],
-            "Alternative": ["-", "-", "-", "-", "-", "-", "-"],
-            "Baseline": ["-", "-", "-", "-", "-", "-", "-"],
-            "Idéntico (Check)": [False, False, False, False, False, False, False]
-        }
-        df_params = pd.DataFrame(data_params)
-        st.dataframe(df_params)
-        
-        st.subheader("2. Composición Química")
-        data_chem = {
-            "Elemento": ["C", "Mn", "P", "S", "Si", "Al", "V", "Ti", "Cr", "Mo", "N", "B", "Cu", "Sn", "Ca", "Ni", "Cb"],
-            "Baseline": ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
-            "Alternative": ["", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""]
-        }
-        df_chem = pd.DataFrame(data_chem)
-        st.dataframe(df_chem)
-        
-        st.subheader("3. Conclusión y Dictamen")
-        st.info("💡 Análisis de criterios de aprobación:")
-        
-        # Lógica de validación
-        criterios_aprobacion = True
-        
-        if not criterios_aprobacion:
-            st.error("❌ Estatus: NO APROBAR")
-        else:
-            st.success("✔️ Estatus: APROBAR")
-            st.write("La desviación cumple con todos los criterios evaluados.")
+            except Exception as e:
+                st.error(f"Ocurrió un error inesperado: {e}")
+                st.stop()
+
+# --- SECCIÓN 3: VISUALIZACIÓN DE RESULTADOS (Modificada para llenar tablas) ---
+# Verificamos si ya tenemos datos procesados en la sesión
+if 'datos_analisis' in st.session_state:
+    datos = st.session_state['datos_analisis']
+    
+    st.divider() # Línea divisoria visual
+
+    # --- TABLA 1: PARÁMETROS GENERALES ---
+    st.subheader("2. Comparativa de Descripción y Parámetros del Rollo")
+    
+    # Creamos el DataFrame directamente desde la lista 'parametros' del JSON
+    df_params = pd.DataFrame(datos['parametros'])
+    
+    # Capitalizamos los nombres de las columnas para que se vean mejor
+    df_params.columns = ['Parámetro', 'Baseline (Actual)', 'Alternative (Propuesta)']
+    
+    # Calculamos el checkbox de "Idéntico" automáticamente comparando las columnas
+    df_params['Idéntico (Check)'] = df_params['Baseline (Actual)'].str.strip() == df_params['Alternative (Propuesta)'].str.strip()
+    
+    # Mostramos la tabla formateada
+    st.dataframe(df_params, use_column_width=True, hide_index=True)
+    
+    
+    # --- TABLA 2: COMPOSICIÓN QUÍMICA ---
+    st.subheader("3. Comparativa de Composición Química (%)")
+    
+    quimica = datos['quimica']
+    
+    # Estructuramos los datos químicos para crear el DataFrame
+    data_chem = {
+        "Elemento": quimica['elementos'],
+        "Baseline (Actual)": quimica['baseline'],
+        "Alternative (Propuesta)": quimica['alternative']
+    }
+    df_chem = pd.DataFrame(data_chem)
+    
+    # Mostramos la tabla química
+    st.dataframe(df_chem, use_column_width=True, hide_index=True)
+    
+    
+    # --- SECCIÓN 4: CONCLUSIÓN Y DICTAMEN (Lógica por definir) ---
+    st.divider()
+    st.subheader("4. Conclusión y Dictamen Automático")
+    st.info("💡 Análisis preliminar basado en reglas de negocio (Lógica de aprobación aún no implementada completamente):")
+    
+    # Espacio reservado para la lógica de validación (Paso 3 de tu requerimiento original)
+    # Por ahora mostramos un mensaje genérico.
+    criterios_aprobacion = True # Placeholder
+    
+    if not criterios_aprobacion:
+        st.error("❌ Estatus Recomendado: NO APROBAR")
+        st.write("Motivos detectados automáticamente...")
+    else:
+        st.success("✔️ Estatus Recomendado: APROBAR")
+        st.write("La desviación parece cumplir con los criterios básicos extraídos.")
+
+else:
+    # Mensaje si no se han cargado/procesado imágenes aún
+    if not (uploaded_baseline and uploaded_alternative):
+        st.warning("⚠️ Por favor, sube ambas imágenes (Baseline y Alternative) para comenzar el análisis.")
