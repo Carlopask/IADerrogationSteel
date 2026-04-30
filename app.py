@@ -32,7 +32,7 @@ with col2:
 if uploaded_baseline and uploaded_alternative:
     if st.button("Procesar Análisis Comparativo", type="primary"):
         with st.status("Analizando imágenes y extrayendo datos con Gemini...", expanded=True) as status:
-            st.write("Conectando con el motor de IA...")
+            st.write("Haciendo el trabajo de Margarita...")
             
             try:
                 # Inicializamos el cliente de forma segura utilizando Streamlit Secrets
@@ -137,20 +137,20 @@ if 'datos_analisis' in st.session_state:
     # --- SECCIÓN 4: CONCLUSIÓN Y DICTAMEN (Lógica por definir) ---
     st.divider()
     st.subheader("4. Conclusión y Dictamen Automático")
-    st.info("💡 Análisis preliminar basado en reglas de negocio (Lógica de aprobación aún no implementada completamente):")
     
-    # Espacio reservado para la lógica de validación (Paso 3 de tu requerimiento original)
-    # Por ahora mostramos un mensaje genérico.
-    criterios_aprobacion = True # Placeholder
+    conclusion = datos.get('conclusion', {})
+    aprobar = conclusion.get('aprobar', True)
+    motivos = conclusion.get('motivos', [])
     
-    if not criterios_aprobacion:
-        st.error("❌ Estatus Recomendado: NO APROBAR")
-        st.write("Motivos detectados automáticamente...")
-    else:
+    if aprobar:
         st.success("✔️ Estatus Recomendado: APROBAR")
-        st.write("La desviación parece cumplir con los criterios básicos extraídos.")
+        st.write("El análisis de desviación cumple con los criterios de calidad.")
+    else:
+        st.error("❌ Estatus Recomendado: NO APROBAR")
+        st.write("Se detectaron las siguientes desviaciones críticas:")
+        for motivo in motivos:
+            st.markdown(f"- {motivo}")
 
 else:
-    # Mensaje si no se han cargado/procesado imágenes aún
     if not (uploaded_baseline and uploaded_alternative):
         st.warning("⚠️ Por favor, sube ambas imágenes (Baseline y Alternative) para comenzar el análisis.")
