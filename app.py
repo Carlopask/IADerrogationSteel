@@ -6,9 +6,6 @@ import smtplib
 import pandas as pd
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from PIL import Image
-import io
 import base64
 
 # ─────────────────────────────────────────────
@@ -33,8 +30,6 @@ html, body, [class*="css"] {
     background-color: #0e1117;
     color: #d4d8e2;
 }
-
-/* Header */
 .main-header {
     background: linear-gradient(135deg, #1a1f2e 0%, #0e1117 60%, #1c2233 100%);
     border-bottom: 2px solid #3a6bc4;
@@ -47,13 +42,7 @@ html, body, [class*="css"] {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 40px,
-        rgba(58,107,196,0.03) 40px,
-        rgba(58,107,196,0.03) 41px
-    );
+    background: repeating-linear-gradient(90deg,transparent,transparent 40px,rgba(58,107,196,0.03) 40px,rgba(58,107,196,0.03) 41px);
 }
 .main-header h1 {
     font-family: 'Rajdhani', sans-serif;
@@ -65,9 +54,7 @@ html, body, [class*="css"] {
     margin: 0;
     position: relative;
 }
-.main-header h1 span {
-    color: #3a6bc4;
-}
+.main-header h1 span { color: #3a6bc4; }
 .main-header p {
     font-family: 'Share Tech Mono', monospace;
     font-size: 0.75rem;
@@ -76,8 +63,6 @@ html, body, [class*="css"] {
     margin: 0.3rem 0 0 0;
     position: relative;
 }
-
-/* Section label */
 .section-label {
     font-family: 'Rajdhani', sans-serif;
     font-size: 1rem;
@@ -89,8 +74,6 @@ html, body, [class*="css"] {
     padding-left: 0.75rem;
     margin: 1.5rem 0 1rem 0;
 }
-
-/* Cards */
 .card {
     background: #141921;
     border: 1px solid #1e2a3a;
@@ -98,8 +81,6 @@ html, body, [class*="css"] {
     padding: 1.5rem;
     margin-bottom: 1rem;
 }
-
-/* Status badges */
 .badge-approved {
     display: inline-block;
     background: rgba(34,197,94,0.15);
@@ -126,32 +107,39 @@ html, body, [class*="css"] {
     border-radius: 2px;
     text-transform: uppercase;
 }
-
-/* Metric box */
-.metric-box {
-    background: #0d1219;
-    border: 1px solid #1e2a3a;
-    border-top: 2px solid #3a6bc4;
-    padding: 1rem 1.2rem;
+.diag-ok {
+    background: rgba(34,197,94,0.08);
+    border: 1px solid #1a4a2e;
+    border-left: 3px solid #22c55e;
     border-radius: 3px;
-    text-align: center;
-}
-.metric-box .label {
+    padding: 0.5rem 0.8rem;
     font-family: 'Share Tech Mono', monospace;
-    font-size: 0.65rem;
-    color: #4a5568;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
+    font-size: 0.72rem;
+    color: #4ade80;
+    margin: 0.3rem 0;
 }
-.metric-box .value {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1.6rem;
-    font-weight: 700;
-    color: #e8eaf0;
-    margin-top: 0.2rem;
+.diag-warn {
+    background: rgba(234,179,8,0.08);
+    border: 1px solid #3a2e00;
+    border-left: 3px solid #eab308;
+    border-radius: 3px;
+    padding: 0.5rem 0.8rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #fde047;
+    margin: 0.3rem 0;
 }
-
-/* Conclusion box */
+.diag-err {
+    background: rgba(239,68,68,0.08);
+    border: 1px solid #3a0e0e;
+    border-left: 3px solid #ef4444;
+    border-radius: 3px;
+    padding: 0.5rem 0.8rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.72rem;
+    color: #f87171;
+    margin: 0.3rem 0;
+}
 .conclusion-box {
     background: #0d1219;
     border: 1px solid #1e2a3a;
@@ -161,6 +149,7 @@ html, body, [class*="css"] {
     font-size: 0.92rem;
     line-height: 1.7;
     color: #b0b8cc;
+    margin-bottom: 1rem;
 }
 .conclusion-box h4 {
     font-family: 'Rajdhani', sans-serif;
@@ -171,12 +160,9 @@ html, body, [class*="css"] {
     text-transform: uppercase;
     margin: 0 0 0.6rem 0;
 }
-
-/* Step indicator */
 .step-dot {
     display: inline-block;
-    width: 24px;
-    height: 24px;
+    width: 24px; height: 24px;
     background: #3a6bc4;
     border-radius: 50%;
     text-align: center;
@@ -187,8 +173,11 @@ html, body, [class*="css"] {
     color: white;
     margin-right: 0.5rem;
 }
-
-/* Streamlit overrides */
+.steel-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #3a6bc4, transparent);
+    margin: 2rem 0;
+}
 .stButton > button {
     background: #3a6bc4 !important;
     color: white !important;
@@ -202,19 +191,7 @@ html, body, [class*="css"] {
     padding: 0.5rem 2rem !important;
     transition: all 0.2s !important;
 }
-.stButton > button:hover {
-    background: #2d5299 !important;
-    transform: translateY(-1px) !important;
-}
-.stFileUploader {
-    border: 1px dashed #1e2a3a !important;
-    border-radius: 4px !important;
-    background: #0d1219 !important;
-}
-div[data-testid="stDataFrame"] {
-    border: 1px solid #1e2a3a !important;
-    border-radius: 4px !important;
-}
+.stButton > button:hover { background: #2d5299 !important; }
 .stTextInput > div > input {
     background: #0d1219 !important;
     border: 1px solid #1e2a3a !important;
@@ -225,18 +202,6 @@ div[data-testid="stDataFrame"] {
 .stTextInput > div > input:focus {
     border-color: #3a6bc4 !important;
     box-shadow: 0 0 0 1px #3a6bc4 !important;
-}
-.stTextArea > div > textarea {
-    background: #0d1219 !important;
-    border: 1px solid #1e2a3a !important;
-    color: #d4d8e2 !important;
-}
-
-/* Divider */
-.steel-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, #3a6bc4, transparent);
-    margin: 2rem 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -262,43 +227,58 @@ except Exception:
     GEMINI_READY = False
     st.warning("⚠️ GEMINI_API_KEY no encontrada en st.secrets. Configúrala en Streamlit Cloud → Settings → Secrets.")
 
-# ─────────────────────────────────────────────
-# HELPER FUNCTIONS
-# ─────────────────────────────────────────────
 
-def extract_text_from_pdf(uploaded_file) -> str:
-    """Extract text from PDF using Gemini's vision capability."""
-    try:
-        import fitz  # PyMuPDF — fallback text extraction
-        pdf_bytes = uploaded_file.read()
-        uploaded_file.seek(0)
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        text = ""
-        for page in doc:
-            text += page.get_text()
-        doc.close()
-        return text.strip()
-    except ImportError:
-        # If PyMuPDF not available, send PDF pages as images to Gemini
-        return _extract_text_via_gemini_vision(uploaded_file)
-    except Exception as e:
-        return f"[Error extrayendo texto: {e}]"
+# ─────────────────────────────────────────────────────────────────────────────
+# PDF EXTRACTION — ESTRATEGIA EN 3 CAPAS
+#
+#  Capa 1: PyMuPDF extracción de texto nativo
+#          → Rápido. Funciona en PDFs con texto real (vectorial).
+#          → Falla en PDFs escaneados (imágenes) o PDFs con tablas gráficas.
+#
+#  Capa 2: PyMuPDF renderiza páginas como imagen → Gemini Vision (OCR)
+#          → Para PDFs escaneados donde la Capa 1 devuelve texto vacío o muy corto.
+#          → Alta resolución (200 dpi) para mejor precisión en números pequeños.
+#
+#  Capa 3: Gemini File API — sube el PDF binario directamente a Gemini
+#          → Para PDFs complejos que ni Capa 1 ni Capa 2 resuelven bien.
+#          → Gemini puede interpretar la estructura del PDF nativo.
+#
+#  Umbral: si el texto extraído tiene menos de MIN_USEFUL_CHARS caracteres,
+#  se considera fallido y se pasa a la siguiente capa.
+# ─────────────────────────────────────────────────────────────────────────────
+
+MIN_USEFUL_CHARS = 200
 
 
-def _extract_text_via_gemini_vision(uploaded_file) -> str:
-    """Send PDF pages as images to Gemini for OCR."""
+def _layer1_native_text(pdf_bytes: bytes) -> str:
+    """Capa 1: Texto nativo con PyMuPDF."""
     try:
         import fitz
-        pdf_bytes = uploaded_file.read()
-        uploaded_file.seek(0)
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        all_text = []
-        for page_num in range(min(len(doc), 10)):  # limit to 10 pages
-            page = doc[page_num]
-            pix = page.get_pixmap(dpi=150)
-            img_bytes = pix.tobytes("png")
-            img_b64 = base64.b64encode(img_bytes).decode()
-            model = genai.GenerativeModel("gemini-2.5-flash")
+        pages_text = []
+        for page in doc:
+            pages_text.append(page.get_text())
+        doc.close()
+        return "\n".join(pages_text).strip()
+    except ImportError:
+        return ""
+    except Exception:
+        return ""
+
+
+def _layer2_vision_ocr(pdf_bytes: bytes) -> str:
+    """
+    Capa 2: Cada página se convierte en imagen PNG de alta resolución
+    y se envía a Gemini Vision para OCR especializado en certificados de acero.
+    """
+    try:
+        import fitz
+        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        pages_text = []
+        for page_num in range(min(len(doc), 8)):
+            pix = doc[page_num].get_pixmap(dpi=200)
+            img_b64 = base64.b64encode(pix.tobytes("png")).decode()
             response = model.generate_content([
                 {
                     "inline_data": {
@@ -306,77 +286,246 @@ def _extract_text_via_gemini_vision(uploaded_file) -> str:
                         "data": img_b64
                     }
                 },
-                "Extrae todo el texto de esta imagen de certificado de acero. Incluye todos los valores numéricos, unidades y encabezados exactamente como aparecen."
+                (
+                    "Eres un experto en certificados de calidad de acero plano. "
+                    "Extrae TODO el contenido visible en esta imagen exactamente como aparece: "
+                    "encabezados de tablas, valores numéricos con sus decimales, unidades de medida, "
+                    "símbolos químicos y sus porcentajes, normas de calidad, números de colada, "
+                    "dimensiones (espesor, ancho), propiedades mecánicas (yield, tensile, elongación), "
+                    "y cualquier código, referencia o número de parte. "
+                    "Si hay tablas, extrae cada celda con su encabezado correspondiente. "
+                    "Responde ÚNICAMENTE con el texto extraído, sin comentarios ni explicaciones."
+                )
             ])
-            all_text.append(response.text)
+            pages_text.append(f"--- Página {page_num + 1} ---\n{response.text.strip()}")
         doc.close()
-        return "\n\n".join(all_text)
+        return "\n\n".join(pages_text)
+    except ImportError:
+        return ""
+    except Exception:
+        return ""
+
+
+def _layer3_file_api(pdf_bytes: bytes) -> str:
+    """
+    Capa 3: Sube el PDF a Gemini File API y solicita extracción completa.
+    Gemini lee el PDF de forma nativa, incluyendo tablas y estructura.
+    """
+    try:
+        import tempfile, os, time
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp.write(pdf_bytes)
+            tmp_path = tmp.name
+
+        uploaded = genai.upload_file(path=tmp_path, mime_type="application/pdf")
+
+        # Esperar hasta que el archivo esté activo (máx 20 segundos)
+        for _ in range(10):
+            f = genai.get_file(uploaded.name)
+            if f.state.name == "ACTIVE":
+                break
+            time.sleep(2)
+
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content([
+            uploaded,
+            (
+                "Eres un experto en certificados de calidad de acero plano. "
+                "Extrae TODA la información de este certificado de material: "
+                "tipo de producto, norma de calidad, número de parte/pieza, número de colada, "
+                "dimensiones (espesor y ancho con unidades), propiedades mecánicas "
+                "(yield strength, tensile strength, elongación con unidades), "
+                "composición química completa (C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb), "
+                "y cualquier referencia, código o nota relevante. "
+                "Presenta los datos de forma estructurada con encabezados claros. "
+                "Responde ÚNICAMENTE con los datos extraídos, sin comentarios adicionales."
+            )
+        ])
+
+        os.unlink(tmp_path)
+        try:
+            genai.delete_file(uploaded.name)
+        except Exception:
+            pass
+
+        return response.text.strip()
     except Exception as e:
-        return f"[Error en extracción visual: {e}]"
+        return f"[Capa3 error: {e}]"
 
 
-def analyze_with_gemini(baseline_text: str, alternatives: list[dict], baseline_code: str, alternative_codes: list[str]) -> dict:
+def extract_pdf_with_diagnosis(uploaded_file) -> tuple:
     """
-    Send all texts to Gemini and get structured analysis back.
-    alternatives: list of {"code": str, "text": str}
-    Returns dict with structured data.
+    Extrae texto de un PDF usando estrategia en 3 capas.
+    Retorna (texto_extraído: str, diagnóstico: dict).
     """
+    filename = uploaded_file.name
+    pdf_bytes = uploaded_file.read()
+    uploaded_file.seek(0)
+
+    diag = {
+        "filename": filename,
+        "method": None,
+        "chars": 0,
+        "warning": None,
+        "ok": False,
+    }
+
+    # ── Capa 1 ──
+    text = _layer1_native_text(pdf_bytes)
+    if len(text) >= MIN_USEFUL_CHARS:
+        diag.update(method="Texto nativo (PyMuPDF)", chars=len(text), ok=True)
+        return text, diag
+
+    # ── Capa 2 ──
+    diag["warning"] = "Texto nativo insuficiente → usando OCR visual por páginas."
+    text = _layer2_vision_ocr(pdf_bytes)
+    if len(text) >= MIN_USEFUL_CHARS:
+        diag.update(method="OCR visual — Gemini Vision", chars=len(text), ok=True)
+        return text, diag
+
+    # ── Capa 3 ──
+    diag["warning"] = "OCR visual insuficiente → usando Gemini File API."
+    text = _layer3_file_api(pdf_bytes)
+    diag["method"] = "Gemini File API"
+    diag["chars"] = len(text)
+    if len(text) >= MIN_USEFUL_CHARS:
+        diag["ok"] = True
+    else:
+        diag["ok"] = False
+        diag["warning"] = (
+            "No se pudo extraer texto suficiente con ningún método. "
+            "El PDF puede estar protegido, dañado o ser de muy baja resolución."
+        )
+    return text, diag
+
+
+def render_diag(diag: dict):
+    """Muestra el estado de extracción de un PDF en la UI."""
+    fname = diag["filename"]
+    method = diag.get("method", "—")
+    chars = diag.get("chars", 0)
+    warn = diag.get("warning")
+
+    if diag["ok"] and not warn:
+        st.markdown(
+            f'<div class="diag-ok">✔ <b>{fname}</b> · {method} · {chars:,} caracteres extraídos</div>',
+            unsafe_allow_html=True
+        )
+    elif diag["ok"] and warn:
+        st.markdown(
+            f'<div class="diag-warn">⚠ <b>{fname}</b> · {method} · {chars:,} chars<br>{warn}</div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f'<div class="diag-err">✖ <b>{fname}</b> · {warn}</div>',
+            unsafe_allow_html=True
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GEMINI ANALYSIS
+#
+# Mejoras en el prompt para el problema de "código no coincide":
+#  1. El código es REFERENCIA DE BÚSQUEDA, no un filtro estricto.
+#  2. Si no hay coincidencia exacta → usar la info más similar del documento.
+#  3. Gemini reporta en "codigo_encontrado" qué referencia usó realmente.
+#  4. Instrucción explícita: NUNCA dejar campos vacíos si el dato existe.
+# ─────────────────────────────────────────────────────────────────────────────
+
+def analyze_with_gemini(
+    baseline_text: str,
+    alternatives: list,
+    baseline_code: str,
+    alternative_codes: list,
+) -> dict:
     model = genai.GenerativeModel("gemini-2.5-flash")
 
     alternatives_section = ""
     for i, alt in enumerate(alternatives):
         alternatives_section += f"""
 --- ALTERNATIVE #{i+1} ---
-Código de parte referencia: {alt['code']}
-Texto del certificado:
+Código de parte proporcionado por el usuario: {alt['code']}
+Texto completo del certificado:
 {alt['text']}
 """
 
     prompt = f"""
-Eres un experto en acero plano, normas de calidad para lámina de acero y certificados de material.
-Tu tarea es analizar la desviación de material entre un documento Baseline y uno o varios documentos Alternative.
+Eres un experto en acero plano, lámina de acero, normas de calidad y certificados de material.
+Analiza la desviación de material entre el certificado Baseline y los certificados Alternative.
 
 === BASELINE ===
-Código de parte referencia: {baseline_code}
+Código de parte (proporcionado por el usuario): {baseline_code}
 Texto del certificado:
 {baseline_text}
 
 === ALTERNATIVES ===
 {alternatives_section}
 
-=== INSTRUCCIONES ===
+════════════════════════════════════════
+REGLAS DE EXTRACCIÓN (MUY IMPORTANTE)
+════════════════════════════════════════
 
-1. Extrae los siguientes parámetros generales de CADA documento:
-   - descripcion_mercaderia (ej: CINTA FRIA RECOCIDA TENSONIVELADA)
-   - norma_calidad (ej: TER/DS1656 TERNIFORM)
-   - pieza
-   - colada
-   - espesor (con unidad, ej: 0.80 mm)
-   - ancho (con unidad, ej: 1200 mm)
-   - yield_strength (con unidad, ej: 140-270 MPa)
-   - tensile_strength (con unidad, ej: 270-370 MPa)
-   - elongacion (con unidad, ej: 38%)
+Sobre los códigos de parte:
+• El código proporcionado por el usuario es una REFERENCIA DE BÚSQUEDA, NO un filtro estricto.
+• Si encuentras el código exacto en el documento → úsalo para localizar los datos.
+• Si NO encuentras el código exacto → busca el código o referencia más similar
+  (mismos primeros dígitos, mismo prefijo, referencia adyacente en la misma tabla).
+• Si no hay ninguna coincidencia → extrae los datos del bloque de información principal del certificado.
+• Registra en "codigo_encontrado" exactamente qué código o referencia encontraste en el documento.
+• NUNCA dejes un campo vacío si el dato existe en algún lugar del documento,
+  aunque el código no coincida exactamente con el solicitado.
+• Los certificados pueden tener múltiples coladas o piezas: usa la que más se asimile al código buscado.
 
-2. Extrae la composición química de CADA documento con los elementos: C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb.
-   Si un elemento no está presente, usa null.
+════════════════════════════════════════
+DATOS A EXTRAER DE CADA DOCUMENTO
+════════════════════════════════════════
 
-3. Evalúa la desviación según estas reglas de aprobación:
-   - NO aprobar si las normas de calidad no son equivalentes.
-   - NO aprobar si el espesor Alternative es MENOR que el Baseline.
-   - NO aprobar si la composición química tiene MÁS porcentaje de Carbono (C) en Alternative vs Baseline.
-   - NO aprobar si es acero fosforizado (P > 0.04%) y el fósforo Alternative es MENOR que el Baseline.
+1. PARÁMETROS GENERALES:
+   - descripcion_mercaderia: tipo de acero/producto (ej: CINTA FRIA RECOCIDA TENSONIVELADA, HR PICKLED, CR FULL HARD)
+   - norma_calidad: norma o especificación del material (ej: TER/DS1656, EN 10130, ASTM A1008, JIS G3141)
+   - pieza: número de pieza o parte (puede ser el código buscado o similar)
+   - colada: número de colada, heat number, o número de lote
+   - espesor: con unidad exacta (ej: 0.80 mm, 1.2 mm)
+   - ancho: con unidad exacta (ej: 1200 mm, 48 in)
+   - yield_strength: límite de fluencia (puede ser rango o valor medido, con unidad: MPa, ksi)
+   - tensile_strength: resistencia a la tracción (con unidad)
+   - elongacion: porcentaje de elongación (ej: 38%, A80=40%)
 
-4. Por cada alternative, emite:
-   - approved: true/false
-   - rejection_reasons: lista de strings (vacía si aprobado)
-   - conclusion_general: resumen ejecutivo de la desviación (2-4 oraciones)
-   - differences: lista de diferencias principales
-   - similarities: lista de similitudes principales
+2. COMPOSICIÓN QUÍMICA:
+   Elementos: C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb
+   • Usa valores numéricos solamente (sin símbolo %).
+   • Si hay un rango (ej: 0.02-0.06), usa el valor máximo del rango.
+   • Si el elemento no aparece en el documento, usa null.
+   • Si aparece como "máx. X" o "<X", usa X como valor.
 
-Responde ÚNICAMENTE con un JSON válido con esta estructura exacta:
+════════════════════════════════════════
+REGLAS DE APROBACIÓN (solo para Alternatives)
+════════════════════════════════════════
+
+Rechazar si alguna de estas condiciones es verdadera:
+  a) Las normas de calidad no son equivalentes (familias o especificaciones distintas).
+  b) El espesor del Alternative es MENOR que el espesor del Baseline.
+  c) El contenido de Carbono (C) en Alternative es MAYOR que en Baseline.
+  d) Es acero fosforizado (P > 0.04% en cualquiera) Y el fósforo Alternative es MENOR que el Baseline.
+
+Por cada Alternative:
+  - approved: true / false
+  - rejection_reasons: lista de strings con la razón específica (vacío si aprobado)
+  - conclusion_general: 2-4 oraciones resumiendo la desviación
+  - differences: lista de diferencias concretas entre Alternative y Baseline
+  - similarities: lista de similitudes relevantes
+
+════════════════════════════════════════
+FORMATO DE RESPUESTA
+════════════════════════════════════════
+
+Responde ÚNICAMENTE con JSON válido. Sin texto adicional. Sin bloques markdown (sin ```).
+
 {{
   "baseline": {{
     "code": "{baseline_code}",
+    "codigo_encontrado": "",
     "general": {{
       "descripcion_mercaderia": "",
       "norma_calidad": "",
@@ -397,6 +546,7 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta:
   "alternatives": [
     {{
       "code": "",
+      "codigo_encontrado": "",
       "general": {{
         "descripcion_mercaderia": "",
         "norma_calidad": "",
@@ -425,16 +575,18 @@ Responde ÚNICAMENTE con un JSON válido con esta estructura exacta:
 
     response = model.generate_content(prompt)
     raw = response.text.strip()
-
-    # Clean potential markdown code fences
-    raw = re.sub(r"^```(?:json)?", "", raw, flags=re.MULTILINE).strip()
-    raw = re.sub(r"```$", "", raw, flags=re.MULTILINE).strip()
+    # Limpiar posibles bloques markdown que Gemini puede agregar
+    raw = re.sub(r"^```(?:json)?[\s]*", "", raw, flags=re.MULTILINE).strip()
+    raw = re.sub(r"[\s]*```$", "", raw, flags=re.MULTILINE).strip()
 
     return json.loads(raw)
 
 
+# ─────────────────────────────────────────────
+# TABLE BUILDERS
+# ─────────────────────────────────────────────
+
 def build_general_table(analysis: dict) -> pd.DataFrame:
-    """Build General Parameters DataFrame from analysis dict."""
     params = [
         ("Descripción de la mercadería", "descripcion_mercaderia"),
         ("Norma de calidad", "norma_calidad"),
@@ -446,65 +598,52 @@ def build_general_table(analysis: dict) -> pd.DataFrame:
         ("Tensile Strength", "tensile_strength"),
         ("% Elongación", "elongacion"),
     ]
-
     baseline_code = analysis["baseline"]["code"]
     rows = []
     for label, key in params:
         row = {"Parámetro": label}
         val = analysis["baseline"]["general"].get(key)
-        row[f"Baseline\n({baseline_code})"] = val if val else ""
+        row[f"Baseline ({baseline_code})"] = val if val else ""
         for alt in analysis["alternatives"]:
-            alt_code = alt["code"]
             val_alt = alt["general"].get(key)
-            row[f"Alternative\n({alt_code})"] = val_alt if val_alt else ""
+            row[f"Alternative ({alt['code']})"] = val_alt if val_alt else ""
         rows.append(row)
-
     return pd.DataFrame(rows)
 
 
 def build_chemistry_table(analysis: dict) -> pd.DataFrame:
-    """Build Chemical Composition DataFrame from analysis dict."""
     elements = ["C", "Mn", "P", "S", "Si", "Al", "V", "Ti",
                 "Cr", "Mo", "N", "B", "Cu", "Sn", "Ca", "Ni", "Cb"]
-
-    baseline_code = analysis["baseline"]["code"]
     rows = []
-
-    # Baseline row
-    b_row = {"Material": f"Baseline ({baseline_code})"}
+    b_row = {"Material": f"Baseline ({analysis['baseline']['code']})"}
     for el in elements:
         val = analysis["baseline"]["quimica"].get(el)
         b_row[el] = val if val is not None else ""
     rows.append(b_row)
-
-    # Alternative rows
     for alt in analysis["alternatives"]:
         a_row = {"Material": f"Alternative ({alt['code']})"}
         for el in elements:
             val = alt["quimica"].get(el)
             a_row[el] = val if val is not None else ""
         rows.append(a_row)
-
-    df = pd.DataFrame(rows)
-    df = df.set_index("Material")
-    return df
+    return pd.DataFrame(rows).set_index("Material")
 
 
-def send_email(recipient: str, subject: str, body_html: str, analysis: dict):
-    """Send analysis results via email using SMTP from st.secrets."""
+# ─────────────────────────────────────────────
+# EMAIL
+# ─────────────────────────────────────────────
+
+def send_email(recipient: str, subject: str, body_html: str):
     try:
         smtp_host = st.secrets.get("SMTP_HOST", "smtp.gmail.com")
         smtp_port = int(st.secrets.get("SMTP_PORT", 587))
         smtp_user = st.secrets["SMTP_USER"]
         smtp_pass = st.secrets["SMTP_PASS"]
-
         msg = MIMEMultipart("alternative")
         msg["Subject"] = subject
         msg["From"] = smtp_user
         msg["To"] = recipient
-
         msg.attach(MIMEText(body_html, "html"))
-
         with smtplib.SMTP(smtp_host, smtp_port) as server:
             server.starttls()
             server.login(smtp_user, smtp_pass)
@@ -517,120 +656,89 @@ def send_email(recipient: str, subject: str, body_html: str, analysis: dict):
 
 
 def build_email_html(analysis: dict, general_df: pd.DataFrame, chem_df: pd.DataFrame) -> str:
-    """Build a formatted HTML email body."""
     baseline_code = analysis["baseline"]["code"]
-
     alt_sections = ""
     for alt in analysis["alternatives"]:
         status_color = "#22c55e" if alt["approved"] else "#ef4444"
         status_text = "APROBADO ✔" if alt["approved"] else "RECHAZADO ✖"
-        reasons_html = ""
-        if alt.get("rejection_reasons"):
-            reasons_html = "<ul>" + "".join(f"<li>{r}</li>" for r in alt["rejection_reasons"]) + "</ul>"
+        reasons_html = ("<ul>" + "".join(f"<li>{r}</li>" for r in alt["rejection_reasons"]) + "</ul>") if alt.get("rejection_reasons") else ""
         diffs_html = "<ul>" + "".join(f"<li>{d}</li>" for d in alt.get("differences", [])) + "</ul>"
         sims_html = "<ul>" + "".join(f"<li>{s}</li>" for s in alt.get("similarities", [])) + "</ul>"
-
         alt_sections += f"""
         <h3 style="color:#3a6bc4;">Alternative: {alt['code']}</h3>
         <p><strong>Estado:</strong> <span style="color:{status_color};font-weight:bold;">{status_text}</span></p>
         {"<p><strong>Razones de rechazo:</strong></p>" + reasons_html if reasons_html else ""}
         <p><strong>Conclusión:</strong> {alt.get('conclusion_general','')}</p>
         <p><strong>Diferencias:</strong></p>{diffs_html}
-        <p><strong>Similitudes:</strong></p>{sims_html}
-        <hr>
-        """
-
-    general_html = general_df.to_html(index=False, border=0,
-                                       classes="table",
-                                       table_id="general_table")
-    chem_html = chem_df.to_html(border=0, classes="table", table_id="chem_table")
-
+        <p><strong>Similitudes:</strong></p>{sims_html}<hr>"""
     return f"""
     <html><head><style>
     body{{font-family:Arial,sans-serif;background:#f5f5f5;color:#222;padding:20px;}}
     h1{{color:#1a3a6e;}} h2{{color:#3a6bc4;}}
-    .table{{border-collapse:collapse;width:100%;margin:1rem 0;font-size:12px;}}
-    .table td,.table th{{border:1px solid #ccc;padding:6px 10px;}}
-    .table th{{background:#1a3a6e;color:white;}}
+    table{{border-collapse:collapse;width:100%;margin:1rem 0;font-size:12px;}}
+    td,th{{border:1px solid #ccc;padding:6px 10px;}}
+    th{{background:#1a3a6e;color:white;}}
     </style></head><body>
     <h1>⚙ Steel Deviation Analyzer — Reporte</h1>
     <p><strong>Baseline:</strong> {baseline_code}</p>
-    <h2>Parámetros Generales</h2>
-    {general_html}
-    <h2>Composición Química</h2>
-    {chem_html}
-    <h2>Resultados por Alternative</h2>
-    {alt_sections}
+    <h2>Parámetros Generales</h2>{general_df.to_html(index=False,border=0)}
+    <h2>Composición Química</h2>{chem_df.to_html(border=0)}
+    <h2>Resultados por Alternative</h2>{alt_sections}
     <p style="color:#888;font-size:11px;">Generado por Steel Deviation Analyzer · Powered by Gemini 2.5 Flash</p>
-    </body></html>
-    """
+    </body></html>"""
 
 
 # ─────────────────────────────────────────────
 # SESSION STATE
 # ─────────────────────────────────────────────
-if "analysis" not in st.session_state:
-    st.session_state.analysis = None
-if "general_df" not in st.session_state:
-    st.session_state.general_df = None
-if "chem_df" not in st.session_state:
-    st.session_state.chem_df = None
+for key in ["analysis", "general_df", "chem_df", "diagnostics"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
+
 
 # ─────────────────────────────────────────────
 # STEP 1 — INPUT FORM
 # ─────────────────────────────────────────────
 st.markdown('<div class="section-label"><span class="step-dot">1</span> Carga de Documentos</div>', unsafe_allow_html=True)
 
-with st.container():
-    col1, col2 = st.columns([1, 1], gap="large")
+col1, col2 = st.columns([1, 1], gap="large")
+with col1:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("**📄 Baseline**")
+    baseline_file = st.file_uploader(
+        "Certificado de material de referencia (PDF)",
+        type=["pdf"], key="baseline_uploader", label_visibility="collapsed"
+    )
+    baseline_code = st.text_input(
+        "Código de parte — Baseline",
+        placeholder="Ej: P/N 12345-A", key="baseline_code"
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**📄 Baseline**")
-        baseline_file = st.file_uploader(
-            "Certificado de material de referencia (PDF)",
-            type=["pdf"],
-            key="baseline_uploader",
-            label_visibility="collapsed"
-        )
-        baseline_code = st.text_input(
-            "Código de parte — Baseline",
-            placeholder="Ej: P/N 12345-A",
-            key="baseline_code"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        st.markdown("**📂 Alternative(s)**")
-        alternative_files = st.file_uploader(
-            "Certificados alternativos (uno o varios PDF)",
-            type=["pdf"],
-            accept_multiple_files=True,
-            key="alt_uploader",
-            label_visibility="collapsed"
-        )
-        alternative_codes_raw = st.text_input(
-            "Códigos de parte — Alternatives (separados por coma)",
-            placeholder="Ej: P/N 67890-B, P/N 67890-C",
-            key="alt_codes"
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
+with col2:
+    st.markdown('<div class="card">', unsafe_allow_html=True)
+    st.markdown("**📂 Alternative(s)**")
+    alternative_files = st.file_uploader(
+        "Certificados alternativos (uno o varios PDF)",
+        type=["pdf"], accept_multiple_files=True,
+        key="alt_uploader", label_visibility="collapsed"
+    )
+    alternative_codes_raw = st.text_input(
+        "Códigos de parte — Alternatives (separados por coma)",
+        placeholder="Ej: P/N 67890-B, P/N 67890-C", key="alt_codes"
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
 recipient_email = st.text_input(
     "📧 Correo electrónico para envío de resultados",
-    placeholder="nombre@empresa.com",
-    key="email"
+    placeholder="nombre@empresa.com", key="email"
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Parse alternative codes
 alternative_codes = [c.strip() for c in alternative_codes_raw.split(",") if c.strip()] if alternative_codes_raw else []
 
-# ─────────────────────────────────────────────
-# VALIDATION + ANALYZE BUTTON
-# ─────────────────────────────────────────────
+# Validation
 ready = (
     GEMINI_READY
     and baseline_file is not None
@@ -649,7 +757,11 @@ if not ready:
     if not alternative_codes: missing.append("Código(s) Alternative")
     if not recipient_email.strip(): missing.append("Correo electrónico")
     if missing:
-        st.markdown(f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;color:#4a5568;margin:0.5rem 0;">// Pendiente: {" · ".join(missing)}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.75rem;color:#4a5568;margin:0.5rem 0;">'
+            f'// Pendiente: {" · ".join(missing)}</div>',
+            unsafe_allow_html=True
+        )
 
 st.markdown('<div class="steel-divider"></div>', unsafe_allow_html=True)
 
@@ -657,40 +769,85 @@ col_btn, _ = st.columns([1, 3])
 with col_btn:
     analyze_clicked = st.button("⚙ Analizar Desviación", disabled=not ready, use_container_width=True)
 
+
 # ─────────────────────────────────────────────
-# STEP 2 — ANALYSIS
+# STEP 2 — EXTRACTION + ANALYSIS
 # ─────────────────────────────────────────────
 if analyze_clicked and ready:
-    with st.spinner("Extrayendo texto de los certificados..."):
-        baseline_text = extract_text_from_pdf(baseline_file)
+    diagnostics = []
 
-        alternatives_data = []
-        for i, alt_file in enumerate(alternative_files):
-            code = alternative_codes[i] if i < len(alternative_codes) else f"ALT-{i+1}"
-            text = extract_text_from_pdf(alt_file)
-            alternatives_data.append({"code": code, "text": text})
+    with st.spinner("Extrayendo texto del certificado Baseline..."):
+        baseline_text, b_diag = extract_pdf_with_diagnosis(baseline_file)
+        diagnostics.append(("Baseline", b_diag))
+
+    alternatives_data = []
+    for i, alt_file in enumerate(alternative_files):
+        code = alternative_codes[i] if i < len(alternative_codes) else f"ALT-{i+1}"
+        with st.spinner(f"Extrayendo texto de Alternative #{i+1}: {alt_file.name}..."):
+            alt_text, a_diag = extract_pdf_with_diagnosis(alt_file)
+            diagnostics.append((f"Alternative #{i+1}", a_diag))
+            alternatives_data.append({"code": code, "text": alt_text})
+
+    st.session_state.diagnostics = diagnostics
+
+    # Warn if any extraction failed completely
+    failed = [label for label, d in diagnostics if not d["ok"]]
+    if failed:
+        st.error(
+            f"⚠️ Extracción fallida en: {', '.join(failed)}. "
+            "Se intentará el análisis con el texto disponible. "
+            "Revisa el panel de Diagnóstico para más detalles."
+        )
 
     with st.spinner("Analizando con Gemini 2.5 Flash..."):
         try:
             analysis = analyze_with_gemini(
-                baseline_text,
-                alternatives_data,
-                baseline_code,
-                alternative_codes
+                baseline_text, alternatives_data, baseline_code, alternative_codes
             )
             general_df = build_general_table(analysis)
             chem_df = build_chemistry_table(analysis)
-
             st.session_state.analysis = analysis
             st.session_state.general_df = general_df
             st.session_state.chem_df = chem_df
-
         except json.JSONDecodeError as e:
             st.error(f"Error parseando respuesta de Gemini: {e}. Intenta de nuevo.")
             st.stop()
         except Exception as e:
             st.error(f"Error en análisis: {e}")
             st.stop()
+
+
+# ─────────────────────────────────────────────
+# DIAGNOSTICS PANEL
+# Siempre visible después de un análisis.
+# Permite al usuario saber exactamente qué pasó
+# con la extracción de cada PDF.
+# ─────────────────────────────────────────────
+if st.session_state.diagnostics:
+    with st.expander("🔍 Diagnóstico de extracción de PDF", expanded=False):
+        st.markdown(
+            '<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;color:#4a5568;margin-bottom:0.8rem;">'
+            '// Método de extracción utilizado por documento. '
+            'Verde = extracción exitosa · Amarillo = fallback utilizado · Rojo = extracción fallida.</div>',
+            unsafe_allow_html=True
+        )
+        for label, diag in st.session_state.diagnostics:
+            st.markdown(f"**{label}**")
+            render_diag(diag)
+
+        if st.session_state.analysis:
+            st.markdown("---")
+            st.markdown(
+                '<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;color:#4a5568;">'
+                '// Códigos encontrados en cada documento (puede diferir del código buscado)</div>',
+                unsafe_allow_html=True
+            )
+            b_found = st.session_state.analysis["baseline"].get("codigo_encontrado", "")
+            st.caption(f"Baseline — buscado: `{st.session_state.analysis['baseline']['code']}` · encontrado en doc: `{b_found or 'no detectado'}`")
+            for alt in st.session_state.analysis.get("alternatives", []):
+                a_found = alt.get("codigo_encontrado", "")
+                st.caption(f"Alternative {alt['code']} — encontrado en doc: `{a_found or 'no detectado'}`")
+
 
 # ─────────────────────────────────────────────
 # STEP 3 — RESULTS DISPLAY
@@ -701,63 +858,72 @@ if st.session_state.analysis is not None:
     chem_df = st.session_state.chem_df
 
     st.markdown('<div class="steel-divider"></div>', unsafe_allow_html=True)
+
+    # ── Code match advisories ──
+    b_found = analysis["baseline"].get("codigo_encontrado", "")
+    if b_found and b_found.strip().lower() != baseline_code.strip().lower():
+        st.info(
+            f"ℹ️ **Baseline:** El código buscado era `{baseline_code}`. "
+            f"El código más cercano encontrado en el documento fue `{b_found}`. "
+            f"Los datos extraídos corresponden a esa referencia."
+        )
+    for alt in analysis["alternatives"]:
+        a_found = alt.get("codigo_encontrado", "")
+        if a_found and a_found.strip().lower() != alt["code"].strip().lower():
+            st.info(
+                f"ℹ️ **Alternative {alt['code']}:** Código buscado `{alt['code']}`, "
+                f"encontrado en documento: `{a_found}`. Se usaron los datos de esa referencia."
+            )
+
+    # ── Table 1: General Parameters ──
     st.markdown('<div class="section-label"><span class="step-dot">2</span> Parámetros Generales</div>', unsafe_allow_html=True)
     st.dataframe(general_df, use_container_width=True, hide_index=True)
 
+    # ── Table 2: Chemical Composition ──
     st.markdown('<div class="section-label"><span class="step-dot">3</span> Composición Química</div>', unsafe_allow_html=True)
     st.dataframe(chem_df, use_container_width=True)
 
-    # ── Approval status per alternative ──
+    # ── Verdict ──
     st.markdown('<div class="section-label"><span class="step-dot">4</span> Veredicto por Alternative</div>', unsafe_allow_html=True)
-
     for alt in analysis["alternatives"]:
-        with st.container():
-            c1, c2 = st.columns([3, 1])
-            with c1:
-                st.markdown(f"**Alternative: `{alt['code']}`**")
-                if alt.get("rejection_reasons"):
-                    for reason in alt["rejection_reasons"]:
-                        st.markdown(f"› {reason}")
-            with c2:
-                if alt["approved"]:
-                    st.markdown('<div class="badge-approved">✔ Aprobado</div>', unsafe_allow_html=True)
-                else:
-                    st.markdown('<div class="badge-rejected">✖ Rechazado</div>', unsafe_allow_html=True)
-
+        c1, c2 = st.columns([3, 1])
+        with c1:
+            st.markdown(f"**Alternative: `{alt['code']}`**")
+            if alt.get("rejection_reasons"):
+                for reason in alt["rejection_reasons"]:
+                    st.markdown(f"› {reason}")
+        with c2:
+            if alt["approved"]:
+                st.markdown('<div class="badge-approved">✔ Aprobado</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="badge-rejected">✖ Rechazado</div>', unsafe_allow_html=True)
         st.markdown("---")
 
     # ── Conclusions ──
     st.markdown('<div class="section-label"><span class="step-dot">5</span> Conclusiones</div>', unsafe_allow_html=True)
-
     for alt in analysis["alternatives"]:
-        st.markdown(f'<div class="conclusion-box"><h4>Alternative — {alt["code"]}</h4>'
-                    f'<strong>Resumen:</strong> {alt.get("conclusion_general","")}<br><br>'
-                    f'<strong>Diferencias:</strong><br>' + "<br>".join(f"• {d}" for d in alt.get("differences", [])) +
-                    f'<br><br><strong>Similitudes:</strong><br>' + "<br>".join(f"• {s}" for s in alt.get("similarities", [])) +
-                    "</div>", unsafe_allow_html=True)
-        st.markdown("")
+        diffs = "<br>".join(f"• {d}" for d in alt.get("differences", [])) or "—"
+        sims = "<br>".join(f"• {s}" for s in alt.get("similarities", [])) or "—"
+        st.markdown(
+            f'<div class="conclusion-box">'
+            f'<h4>Alternative — {alt["code"]}</h4>'
+            f'<strong>Resumen:</strong> {alt.get("conclusion_general","")}<br><br>'
+            f'<strong>Diferencias:</strong><br>{diffs}<br><br>'
+            f'<strong>Similitudes:</strong><br>{sims}'
+            f'</div>',
+            unsafe_allow_html=True
+        )
 
-    # ─────────────────────────────────────────────
-    # STEP 4 — SEND EMAIL
-    # ─────────────────────────────────────────────
+    # ── Send Email ──
     st.markdown('<div class="steel-divider"></div>', unsafe_allow_html=True)
     st.markdown('<div class="section-label"><span class="step-dot">6</span> Envío de Resultados</div>', unsafe_allow_html=True)
-
     col_mail, _ = st.columns([1, 3])
     with col_mail:
         if st.button("📧 Enviar por correo", use_container_width=True):
             email_html = build_email_html(analysis, general_df, chem_df)
-            baseline_code_val = analysis["baseline"]["code"]
-            subject = f"Steel Deviation Report — Baseline: {baseline_code_val}"
-
+            subject = f"Steel Deviation Report — Baseline: {analysis['baseline']['code']}"
             with st.spinner("Enviando correo..."):
-                success, error = send_email(
-                    st.session_state.get("email_val", recipient_email),
-                    subject,
-                    email_html,
-                    analysis
-                )
-
+                success, error = send_email(recipient_email, subject, email_html)
             if success:
                 st.success(f"✅ Reporte enviado a **{recipient_email}** correctamente.")
             else:
