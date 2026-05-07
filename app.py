@@ -437,7 +437,6 @@ def analyze_with_gemini(
     baseline_text: str,
     alternatives: list,
     baseline_code: str,
-    alternative_codes: list,
 ) -> dict:
     model = genai.GenerativeModel("gemini-2.5-flash")
 
@@ -445,7 +444,7 @@ def analyze_with_gemini(
     for i, alt in enumerate(alternatives):
         alternatives_section += f"""
 --- ALTERNATIVE #{i+1} ---
-Código de parte proporcionado por el usuario: {alt['code']}
+Nombre del archivo PDF (será el título en las tablas): {alt['code']}
 Texto completo del certificado:
 {alt['text']}
 """
@@ -466,16 +465,24 @@ Texto del certificado:
 REGLAS DE EXTRACCIÓN (MUY IMPORTANTE)
 ════════════════════════════════════════
 
-Sobre los códigos de parte:
-• El código proporcionado por el usuario es una REFERENCIA DE BÚSQUEDA, NO un filtro estricto.
-• Si encuentras el código exacto en el documento → úsalo para localizar los datos.
-• Si NO encuentras el código exacto → busca el código o referencia más similar
-  (mismos primeros dígitos, mismo prefijo, referencia adyacente en la misma tabla).
-• Si no hay ninguna coincidencia → extrae los datos del bloque de información principal del certificado.
-• Registra en "codigo_encontrado" exactamente qué código o referencia encontraste en el documento.
-• NUNCA dejes un campo vacío si el dato existe en algún lugar del documento,
-  aunque el código no coincida exactamente con el solicitado.
-• Los certificados pueden tener múltiples coladas o piezas: usa la que más se asimile al código buscado.
+Para el BASELINE:
+• El código "{baseline_code}" es una REFERENCIA DE BÚSQUEDA, no un filtro estricto.
+• Si encuentras ese código exacto en el documento → úsalo para localizar los datos de esa pieza.
+• Si NO lo encuentras exacto → busca el código o referencia más similar en el documento
+  (mismos dígitos parciales, mismo prefijo, referencia adyacente en la misma tabla).
+• Si no hay ninguna coincidencia → extrae los datos del bloque de información principal.
+• Registra en "codigo_encontrado" exactamente qué código o referencia localizaste en el documento.
+
+Para cada ALTERNATIVE:
+• El campo "code" ya contiene el nombre del archivo PDF — úsalo TAL CUAL en el JSON de respuesta.
+• NO cambies el valor de "code"; es el identificador que aparecerá en las tablas.
+• Extrae TODA la información disponible en el certificado, sin filtrar por ningún código específico.
+• Si el certificado tiene varias piezas o coladas, extrae los datos de la sección principal o más destacada.
+
+Para TODOS los documentos:
+• NUNCA dejes un campo vacío si el dato existe en el documento.
+• Si un valor aparece como rango (ej: 0.02-0.06), usa el valor máximo.
+• Si aparece como "máx. X" o "<X", usa X como valor numérico.
 
 ════════════════════════════════════════
 DATOS A EXTRAER DE CADA DOCUMENTO
@@ -484,20 +491,18 @@ DATOS A EXTRAER DE CADA DOCUMENTO
 1. PARÁMETROS GENERALES:
    - descripcion_mercaderia: tipo de acero/producto (ej: CINTA FRIA RECOCIDA TENSONIVELADA, HR PICKLED, CR FULL HARD)
    - norma_calidad: norma o especificación del material (ej: TER/DS1656, EN 10130, ASTM A1008, JIS G3141)
-   - pieza: número de pieza o parte (puede ser el código buscado o similar)
-   - colada: número de colada, heat number, o número de lote
+   - pieza: número de pieza o parte encontrado en el documento
+   - colada: número de colada, heat number o número de lote
    - espesor: con unidad exacta (ej: 0.80 mm, 1.2 mm)
    - ancho: con unidad exacta (ej: 1200 mm, 48 in)
-   - yield_strength: límite de fluencia (puede ser rango o valor medido, con unidad: MPa, ksi)
-   - tensile_strength: resistencia a la tracción (con unidad)
+   - yield_strength: límite de fluencia con unidad (ej: 140-270 MPa, o valor real medido)
+   - tensile_strength: resistencia a la tracción con unidad
    - elongacion: porcentaje de elongación (ej: 38%, A80=40%)
 
 2. COMPOSICIÓN QUÍMICA:
    Elementos: C, Mn, P, S, Si, Al, V, Ti, Cr, Mo, N, B, Cu, Sn, Ca, Ni, Cb
-   • Usa valores numéricos solamente (sin símbolo %).
-   • Si hay un rango (ej: 0.02-0.06), usa el valor máximo del rango.
+   • Solo valores numéricos (sin el símbolo %).
    • Si el elemento no aparece en el documento, usa null.
-   • Si aparece como "máx. X" o "<X", usa X como valor.
 
 ════════════════════════════════════════
 REGLAS DE APROBACIÓN (solo para Alternatives)
@@ -506,11 +511,12 @@ REGLAS DE APROBACIÓN (solo para Alternatives)
 Rechazar si alguna de estas condiciones es verdadera:
   a) Las normas de calidad no son equivalentes (familias o especificaciones distintas).
   b) El espesor del Alternative es MENOR que el espesor del Baseline.
+  c) El contenido de Carbono (C) en Alternative es 30% MAYOR que en Baseline.
   d) Es acero fosforizado (P > 0.04% en cualquiera) Y el fósforo Alternative es MENOR que el Baseline.
 
 Por cada Alternative:
   - approved: true / false
-  - rejection_reasons: lista de strings con la razón específica (vacío si aprobado)
+  - rejection_reasons: lista de strings con la razón específica (lista vacía si aprobado)
   - conclusion_general: 2-4 oraciones resumiendo la desviación
   - differences: lista de diferencias concretas entre Alternative y Baseline
   - similarities: lista de similitudes relevantes
@@ -544,7 +550,7 @@ Responde ÚNICAMENTE con JSON válido. Sin texto adicional. Sin bloques markdown
   }},
   "alternatives": [
     {{
-      "code": "",
+      "code": "(usa exactamente el nombre del archivo que se proporcionó)",
       "codigo_encontrado": "",
       "general": {{
         "descripcion_mercaderia": "",
@@ -574,7 +580,6 @@ Responde ÚNICAMENTE con JSON válido. Sin texto adicional. Sin bloques markdown
 
     response = model.generate_content(prompt)
     raw = response.text.strip()
-    # Limpiar posibles bloques markdown que Gemini puede agregar
     raw = re.sub(r"^```(?:json)?[\s]*", "", raw, flags=re.MULTILINE).strip()
     raw = re.sub(r"[\s]*```$", "", raw, flags=re.MULTILINE).strip()
 
@@ -717,15 +722,21 @@ with col1:
 with col2:
     st.markdown('<div class="card">', unsafe_allow_html=True)
     st.markdown("**📂 Alternative(s)**")
+    st.caption("El nombre de cada PDF se usará como título en las tablas.")
     alternative_files = st.file_uploader(
         "Certificados alternativos (uno o varios PDF)",
         type=["pdf"], accept_multiple_files=True,
         key="alt_uploader", label_visibility="collapsed"
     )
-    alternative_codes_raw = st.text_input(
-        "Códigos de parte — Alternatives (separados por coma)",
-        placeholder="Ej: P/N 67890-B, P/N 67890-C", key="alt_codes"
-    )
+    # Preview de archivos cargados
+    if alternative_files:
+        for f in alternative_files:
+            fname_display = f.name.replace(".pdf", "").replace("_", " ").replace("-", " ")
+            st.markdown(
+                f'<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;'
+                f'color:#3a6bc4;padding:2px 0;">📄 {fname_display}</div>',
+                unsafe_allow_html=True
+            )
     st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('<div class="card">', unsafe_allow_html=True)
@@ -735,7 +746,13 @@ recipient_email = st.text_input(
 )
 st.markdown('</div>', unsafe_allow_html=True)
 
-alternative_codes = [c.strip() for c in alternative_codes_raw.split(",") if c.strip()] if alternative_codes_raw else []
+# Los "códigos" de los alternatives ahora son los nombres de los archivos PDF (sin extensión)
+def pdf_name_to_label(filename: str) -> str:
+    """Convierte 'Certificado_Proveedor_X.pdf' → 'Certificado Proveedor X'"""
+    name = filename
+    if name.lower().endswith(".pdf"):
+        name = name[:-4]
+    return name.replace("_", " ").replace("-", " ")
 
 # Validation
 ready = (
@@ -743,7 +760,6 @@ ready = (
     and baseline_file is not None
     and len(alternative_files) > 0
     and baseline_code.strip() != ""
-    and len(alternative_codes) > 0
     and recipient_email.strip() != ""
 )
 
@@ -753,7 +769,6 @@ if not ready:
     if not baseline_file: missing.append("PDF Baseline")
     if not alternative_files: missing.append("PDF(s) Alternative")
     if not baseline_code.strip(): missing.append("Código Baseline")
-    if not alternative_codes: missing.append("Código(s) Alternative")
     if not recipient_email.strip(): missing.append("Correo electrónico")
     if missing:
         st.markdown(
@@ -781,11 +796,16 @@ if analyze_clicked and ready:
 
     alternatives_data = []
     for i, alt_file in enumerate(alternative_files):
-        code = alternative_codes[i] if i < len(alternative_codes) else f"ALT-{i+1}"
+        # El identificador de cada alternative ES el nombre del PDF
+        pdf_label = pdf_name_to_label(alt_file.name)
         with st.spinner(f"Extrayendo texto de Alternative #{i+1}: {alt_file.name}..."):
             alt_text, a_diag = extract_pdf_with_diagnosis(alt_file)
-            diagnostics.append((f"Alternative #{i+1}", a_diag))
-            alternatives_data.append({"code": code, "text": alt_text})
+            diagnostics.append((f"Alternative #{i+1} — {alt_file.name}", a_diag))
+            alternatives_data.append({
+                "code": pdf_label,          # label visible en tablas = nombre del PDF
+                "filename": alt_file.name,  # nombre original para diagnóstico
+                "text": alt_text
+            })
 
     st.session_state.diagnostics = diagnostics
 
@@ -801,7 +821,7 @@ if analyze_clicked and ready:
     with st.spinner("Analizando con Gemini 2.5 Flash..."):
         try:
             analysis = analyze_with_gemini(
-                baseline_text, alternatives_data, baseline_code, alternative_codes
+                baseline_text, alternatives_data, baseline_code
             )
             general_df = build_general_table(analysis)
             chem_df = build_chemistry_table(analysis)
@@ -838,14 +858,14 @@ if st.session_state.diagnostics:
             st.markdown("---")
             st.markdown(
                 '<div style="font-family:\'Share Tech Mono\',monospace;font-size:0.7rem;color:#4a5568;">'
-                '// Códigos encontrados en cada documento (puede diferir del código buscado)</div>',
+                '// Referencia encontrada en cada documento</div>',
                 unsafe_allow_html=True
             )
             b_found = st.session_state.analysis["baseline"].get("codigo_encontrado", "")
             st.caption(f"Baseline — buscado: `{st.session_state.analysis['baseline']['code']}` · encontrado en doc: `{b_found or 'no detectado'}`")
             for alt in st.session_state.analysis.get("alternatives", []):
                 a_found = alt.get("codigo_encontrado", "")
-                st.caption(f"Alternative {alt['code']} — encontrado en doc: `{a_found or 'no detectado'}`")
+                st.caption(f"Alternative '{alt['code']}' — referencia encontrada en doc: `{a_found or 'no aplicable'}`")
 
 
 # ─────────────────────────────────────────────
@@ -858,21 +878,14 @@ if st.session_state.analysis is not None:
 
     st.markdown('<div class="steel-divider"></div>', unsafe_allow_html=True)
 
-    # ── Code match advisories ──
+    # ── Baseline code match advisory ──
     b_found = analysis["baseline"].get("codigo_encontrado", "")
     if b_found and b_found.strip().lower() != baseline_code.strip().lower():
         st.info(
             f"ℹ️ **Baseline:** El código buscado era `{baseline_code}`. "
-            f"El código más cercano encontrado en el documento fue `{b_found}`. "
+            f"La referencia más cercana encontrada en el documento fue `{b_found}`. "
             f"Los datos extraídos corresponden a esa referencia."
         )
-    for alt in analysis["alternatives"]:
-        a_found = alt.get("codigo_encontrado", "")
-        if a_found and a_found.strip().lower() != alt["code"].strip().lower():
-            st.info(
-                f"ℹ️ **Alternative {alt['code']}:** Código buscado `{alt['code']}`, "
-                f"encontrado en documento: `{a_found}`. Se usaron los datos de esa referencia."
-            )
 
     # ── Table 1: General Parameters ──
     st.markdown('<div class="section-label"><span class="step-dot">2</span> Parámetros Generales</div>', unsafe_allow_html=True)
