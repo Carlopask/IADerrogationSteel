@@ -506,7 +506,6 @@ REGLAS DE APROBACIÓN (solo para Alternatives)
 Rechazar si alguna de estas condiciones es verdadera:
   a) Las normas de calidad no son equivalentes (familias o especificaciones distintas).
   b) El espesor del Alternative es MENOR que el espesor del Baseline.
-  c) El contenido de Carbono (C) en Alternative es MAYOR que en Baseline.
   d) Es acero fosforizado (P > 0.04% en cualquiera) Y el fósforo Alternative es MENOR que el Baseline.
 
 Por cada Alternative:
